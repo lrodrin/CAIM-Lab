@@ -1,0 +1,182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML><HEAD>
+
+<BODY>
+
+<H1>CAIM lab, Session 3</H1>
+
+<H1>Understanding the tf-idf vector model</H1>
+
+<H2>0. Summary</H2>
+<P>In this session: 
+<UL>
+  <LI>We will complete a program to display documents in the tf-idf vector model.</LI>
+  <LI>We will compute document similarities with the cosine measure.</LI>
+</UL>
+
+<H2>1. Viewing documents in tf-idf format</H2>
+
+<p>This part of the session is to make sure we understand the tf-idf weight scheme for representing
+documents as vectors and the cosine similarity measure. 
+We will complete a program that does basically the following:</p>
+
+<pre><code>
+   while (true) {
+       1. read two filenames f1, f2;
+       2. get the document identifiers id1, id2 of the files f1 and f2 in the index; 
+       3. compute the tf-idf representation of id1, id2 as vectors v1, v2 (and print them);
+       4. compute the cosine similarity of v1, v2 (and print it);
+   }
+</code></pre>
+
+We will use an <i>IndexSearcher</i> object to search the index for the two files in step 2, 
+and an <i>IndexReader</i> object to obtain the relevant information (tf's and idf's) 
+from the index in step 3;
+Steps 1 and 4 do not require accessing the index. 
+
+<H2>2. Adding term frequencies to the index</H2>
+
+<p>First of all, we need to make sure that the index we build contains all the information
+required to compute tf-idf's, which is mainly frequencies of terms in documents.
+At least in some versions of Lucene, the IndexFiles.java class does not really store them 
+by default (to save space). With the program we are going to complete, if we use
+such an index we will get a "null pointer error" because we will ask Lucene
+to give us a certain TermFreqVector that is not there. 
+</p>
+<p>
+To solve this, we need to change IndexFiles.java as follows. Locate the line where 
+the "contents" field is added to the document that is being indexed. Will look roughly like this: 
+</p>
+
+<pre><code>
+    doc.add(new Field("contents",something-about-a-FileReader-or-BufferedReader));
+</code></pre>
+
+<p>
+and add the flag saying that the new Field should store TermVector information:
+</p>
+
+<pre><code>
+    doc.add(new Field("contents",something-about-a-FileReader-or-BufferedReader,Field.TermVector.YES));
+</code></pre>
+
+<p>Compile IndexFiles.java, then index the novels directory.</p>
+
+<H2>3. Computing tf-idf's and cosine measure</H2>
+
+<p>Get the classes <i>TfIdfViewer.java</i> and <i>TermWeight.java</i>. 
+TermWeight.java simply represents a pair (string,weight). 
+Have a look at it and compile it now. 
+TfIdfViewer.java is the (incomplete) program that implements 
+the pseudocode above. When it is complete we should call it as:
+</p>
+
+<p>
+<i>% java TfIdfViewer -index mydirectory
+</i></p>
+
+<p>
+and then enter pairs of filenames to display
+these files in tf-idf format and get their similarity. 
+The names should include the directory paths as they appear in the
+index (you can use lucene to view them). 
+</p>
+
+<p>Study the existing code:</p>
+
+<ul>
+<li> The main method parses the -index argument, creates IndexReader and IndexSearcher objects, 
+     then implements the code above by calling appropriate functions</li> 
+<li>The <i>findDocId</i> function creates a query to ask the index "give me the docid's of documents
+     in the index having this string in the 'path' field"</li> 
+<li> The <i>docFreq</i> function returns the number of documents in the index containing a given term 
+     in the 'contents' field. Note that a lucene <i>Term</i> is a pair (fieldname,string)</li> 
+<li>The (incomplete) <i>toTfIdf</i> function returns a vector of TermWeights 
+     representing the document with the given docid. It:
+       <ul>
+         <li>First gets a TermFreqVector with (essentially) pairs (Term,frequency-of-the-Term-in-the-doc).</li>
+         <li>Splits the TermFreqVector into two vectors, one of strings with the terms, the other with the corresponding
+             frequencies. IMPORTANT: Lucene guarantees that the vector of strings is sorted according to String.compareTo, the 
+             funny Java way for comparing strings. Recall that if x and y are strings, x.compareTo(y) returns a negative int 
+             if x goes before y (in dictionary order), a positive int if x goes after y, and 0 if x == y. </li>
+         <li>Gets the number of documents in the index.</li>
+         <li>Then finally creates every TermWeight entry of the vector to be returned.</li>
+       </ul> 
+       Your task is to complete the computations of the tf-idf value to fill this vector. 
+       You have all the ingredients ready, and only have to apply the formulas seen in class. 
+       </li> 
+<li>
+Function <i>normalize</i> should compute the norm of the vector (square root of the sums of 
+components squared) and divide the whole vector by it, so that the resulting vector has norm (length)
+1. Complete this function. You may want to use function <i>Math.sqrt</i>. 
+</li>
+<li>
+Function <i>printTermWeightVector</i> just prints one line for each entry in the given
+vector of the form (term,weight). Complete this function. 
+</li>
+<li>
+Function <i>cosineSimilarity</i> can be implemented by first normalizing both arguments, 
+then computing their inner product. Complete this function. 
+IMPORTANT: It must be an efficient implementation, with at most one scan 
+of each vector. Use strongly that the vectors are sorted by term, according to
+String.compareTo.
+</li>
+</ul>
+
+<H2>4. Experimenting</H2>
+
+<p>
+Once you are done with your program, try it out with the test collections 
+from the previous sessions. First, test your implementation by 
+computing the similarity of a file with itself (what should it give?).
+</p>
+
+<p>You may even want to create a very simple collection with
+two documents and three or four terms so that you can check by hand
+your implementation.
+</p>
+
+<H2>5. Deliverables</H2>
+
+<p>
+<i>To deliver:</i>
+Write a brief report (less than 1 page) explaining a) if you read and understood the 
+code that was provided, b) if you succeeded in implementing everything, 
+c) any major difficulties you found, and d) any observations 
+on your experiments or on what you learned this way. 
+Pdf format is preferred. 
+Make sure it has your name, date, and title. 
+You must also deliver all that classes that you modified.
+Not the java classes you didn't modify. Please mark with visible comments 
+the parts where you made changes. Pack everything in a .zip file. 
+</p>
+
+<p>
+<i>Procedure:</i>
+Normally, use the tool in the Rac&oacute; called "Practiques via web". 
+In an emergency, send by email to "gavalda" followed by "@lsi.upc.edu".  
+<p>
+
+<p>
+<i>Deadline:</i>
+Work must be delivered within 2 weeks from the lab session you attend. 
+Late deliveries risk being penalized or not accepted at all. 
+If you anticipate problems with the deadline, tell me as soon as possible. 
+</p>
+
+<p><i>Rules:</i>
+1. You can solve the problem alone or with one other person, 
+but at most one lab assignment with the same person in the whole course. 
+2. No plagiarism; don't discuss your work with others, except
+your teammate if you are solving the problem in two;
+if in doubt about what is allowed, ask us. 
+3. If you feel you are spending much more time than the rest of the group, 
+ask us for help. Questions can be asked either in person or by email, 
+and you'll never be penalized by asking questions, 
+no matter how stupid they look in retrospect.
+</p>
+
+
+<HR>
+<I>Last update: October 3rd, 2014</I>
+

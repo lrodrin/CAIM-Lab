@@ -1,0 +1,301 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0051)http://www-pagines.fib.upc.es/~ri/session1-eng.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+</head><body>
+
+<h1>CAIM, Session 1</h1>
+
+<h1>Introduction to Lucene</h1>
+
+<h2>0. Summary</h2>
+
+<p>In this session: 
+</p><ul>
+  <li>We will  learn what Lucene is, what it can do, and what it does not do. 
+  </li><li>We will  install Lucene and some related package. 
+  </li><li>We will  use Lucene to index a set of text files, and learn to ask simple queries
+  about these documents. 
+  </li><li>We will use Luke to look into the indices created by Lucene.</li>
+  <li>We will study whether the given texts satisfy Zipf's and Heaps' laws.</li>
+</ul>
+
+<p>
+You can use either Linux or Windows for this session, as well as for Sessions 2 and 3, 
+with very minor differences. Your choice. Familiarity with Java is expected. 
+</p>
+
+<h2>1. What is Lucene?</h2>
+
+<p>Lucene is a library for indexing and searching text files, written in Java
+and available as open source under the Apache License. 
+It is not a standalone application; it is designed to be integrated easily
+into applications that have to search text in local files or from the Internet. 
+It attempts to balance efficiency, flexibility, and conceptual simplicity at the
+API (Application Programming Interface) level.</p>
+
+<p>
+Some things that Lucene does <i>not</i> -- so it would be the application's programmer task:
+</p>
+
+<ul>
+  <li>Ask the user which files have to be indexed.  
+  </li><li>Show the results of indexing. 
+  </li><li>Ask the user which query s/he wants to ask. 
+  </li><li>Show the user the results of the query. 
+  </li><li>Display statistics. </li>
+</ul>
+
+<p>
+Of course, lots of people have built code that does these things on top of Lucene. 
+In particular, we'll use a separate program called Luke to examine Lucene's indexes and 
+to build and ask queries.</p>
+
+<p>
+Lucene's homepage is <a href="http://lucene.apache.org/java/docs/index.html">lucene.apache.org/java/docs/index.html</a>. 
+Initially, Lucene was developed by Doug Cutting and was a part of Jakarta, a subproject of Apache.
+On february 2005, it became a top-level project within Apache. 
+</p>
+
+<h2>2. Installing Lucene</h2>
+
+<p>If you work in the PC's in labs at FIB a relatively recent version should 
+be already installed; in that case, jump to step 3 directly. Follow steps 1 and 2 if you want
+to install Lucene your machine.
+
+</p><p>
+In what follows, replace VERSION with the version numbers of the lucene and luke 
+versions you want to install (such as 3.6.0 or 4.7.1 or 4.10.0). There was a major restructuring
+of the lucene code from 3.6.2 to 4.0.0; many programs for 3.x won't compile with lucene-4.x, and 
+indices created with lucene-4.x can't be read using lucene-3.x.
+</p>
+
+<p><b>Step 1:</b> Download from 
+<a href="http://lucene.apache.org/java/docs/index.html">http://lucene.apache.org/java/docs/index.html</a>
+the compressed versions of: 
+</p>
+
+<ul>
+  <li>The Lucene executable and demo files: lucene-VERSION.zip (or .tar.gz).
+  </li><li>The Lucene source code: lucene-VERSION-src.tgz (or otherwise compressed). 
+      We will not use it in Session 1, but in later sessions.
+  </li>
+</ul>
+
+<p>and the executable of luke; normally it should be from 
+<a href="http://code.google.com/p/luke/">the google code luke site</a>, 
+but it has not yet been updated to most recent Lucene versions of Lucene.
+So if you are using 4.2.x or above, get it from 
+<a href="https://java.net/projects/opengrok/downloads ">opengrok's web</a> instead until it is. 
+</p>
+
+<ul>
+  <li>The Luke executable file <i>lukeall-VERSION.jar</i>. </li>
+</ul>
+
+<p><b>Step 2:</b> Inside lucene-VERSION.zip, locate the following  .jar files: </p>
+
+<ul>
+  <li>lucene-core-VERSION.jar, the Lucene executable,</li>
+  <li>lucene-demo-VERSION.jar, the demo executable, </li>
+</ul>
+
+<p>and place them, for example, in your work directory.</p>
+
+<p><b>Step 3:</b> Make sure that the Java interpreter will know where to find these
+.jar files at runtime, adding them to the CLASSPATH.</p>
+
+<ul>
+<li>The best option is to define variables e.g. LUCENEDIR and LUKEDIR
+with the paths, and add the definitions to a command file.</li>
+<li>The command files <i>setclass</i> (for Linux) and <i>setclass.bat</i> (for Windows)
+provided in this session's pack should be good approximations. 
+Check the directories in your install, cange the definition of LUCENEDIR and LUKEDIR and the VERSION, if required,
+and execute.</li>
+<li>Alternatively,</b> if you are familiar with platforms such as Eclipse or Netbeans, 
+install them. Lucene can be installed as a library there, 
+so you can modify, recompile, and execute lucene classes comfortably.
+We will need to do this in the next sessions; it's optional today. 
+<a href="http://www.lsi.upc.edu/~caim/lab/luceneEclipseNetbeans.txt">Instructions here.</a> </li>
+</ul>
+
+<h2>3. Indexing and querying</h2>
+
+<p>Download these two zipped sets of files: 
+<a href="http://www.lsi.upc.edu/~caim/lab/20_newsgroups.tar.gz">20_newsgroups</a> and 
+<a href="http://www.lsi.upc.edu/~caim/lab/novels.zip">novels</a>. 
+Unzip them in your work directory, say to directories <i>20_newsgroups</i> and <i>novels</i>. 
+They contain respectively:
+<ul>
+<li>Text from 20 usenet groups on various topics, a classic corpus in IR evaluation, 
+from <a href="http://disi.unitn.it/moschitti/corpora.htm">here</a>.</li>
+<li>A number of random novels and other texts in English from the 
+<a href="http://www.gutenberg.org/">Project Gutenberg</a>, with a tendency towards
+late 19th and early 20th centuries.</li>
+</ul>
+
+</p><p>The methods in the executable demo can be called from the command window line. 
+For example, to add all the files in the newsgroups directory to an index, 
+just type: </p>
+
+<p><i>java org.apache.lucene.demo.IndexFiles -docs 20_newsgroups</i> </p>
+
+<p>Try it. An <i>index</i> will appear in your working directory
+with the index files - not meant to be read by humans. 
+You may add another flag <i>-index indexname</i> besides <i>-docs</i> to specify a directory name.
+</p>
+
+<p>To query this index, type for instance</p>
+
+<p><i>java org.apache.lucene.demo.SearchFiles -index index<br>
+      Query: word1 word2 word3 </i></p>
+<p>
+This will return files that contain 
+<i>word1</i>, <i>word2</i> and <i>word3</i>.
+To make a word mandatory, add a <i>+</i> sign in front. 
+The search options are described 
+<a href="http://lucene.apache.org/java/3_6_0/queryparsersyntax.html">here</a>. 
+Besides <i>+</i> queries can include and <i>-</i>, 
+AND, OR and NOT (in uppercase) and other connectives. 
+For example:</p>
+
+<p>
+<i>Query: (word1 OR word2) AND word3</i>
+</p>
+
+<p>
+Two observations: 1) 
+The difference between <i>"+word"</i> and simply "<i>word</i>"
+is that with <i>+</i>, <i>word</i> <i>must</i> appear in the document; without +,
+the word just increases the document's similarity to the query 
+(hence its position in the
+ranking), though it is not strictly mandatory. 
+2) The NOT operator is binary and interpreted as a set difference. 
+A query cannot start with NOT. We will understand all this better
+as we see the boolean and vector models in theory. 
+</p>
+
+<p>Play a bit with the searcher. Look into the groups in the corpus and 
+try to imagine queries that would select, for example, mostly files
+from one particular newsgroups, or Dickens' novels and no others, etc. 
+</p>
+
+<p>After creating an index, you can use Luke to 
+examine its contents and make queries. Click on the .jar file or type</p>
+
+<p><i>java -jar $LUCENEDIR/lukeall-VERSION.jar -index ./index </i>
+
+</p><p>(change to <i>%LUCENEDIR%</i> in Windows). </p>
+
+<p>You have tabs to 1) see various statistics and word ranking 2) see info about
+the indexed files 3) ask queries 4) details about the index files (don't ask me...)
+and 5) try different analyzers (we'll discuss this concept in session 2). 
+In the first tab, you can choose the number of <i>top words</i> you want to see
+typing the number in, then clicking on the <i>Show top terms</i> button. 
+</p>
+ 
+<p>Now index the <i>novels</i> corpus. Use the same line as above, but note 
+that you can add a "-index indexnovels" option if you want to create a different 
+index directory. Can you find a query that returns the novels by Dickens
+and no other? (just an example...)
+</p>
+ 
+<h2>4. Zipf's and Heaps' law</h2>
+
+<p>
+Now let us look at the word distribution in these texts, 
+and in particular whether Zipf's and Heaps' laws hold. 
+We recommend using the novels corpus because it is much cleaner. 
+</p>
+
+<p>The 
+<i>CountWords.java</i> program in the pack 
+reads an index and writes on the standard output 
+all the terms it contains, with their counts. 
+(<i>CountWords3.java</i>
+is the version for lucene versions 3.x, in case you needed it). 
+Compile it, then execute it redirecting the output to a file.</p>
+
+<p></p>
+Inspect the file. Order by word frequency and remove stupid terms
+such as numbers, url's, binary or unreadable stuff, dates, etc. Leave 
+only "proper" words. Now we are ready to analyze the data.</p>
+
+<p>
+For Zipf's law, check if the rank-frequency distribution seems 
+to follow a power law; what are the power law parameters  (<i>f = c*(rank+b)^a</i>) 
+that seem to describe best what you see? 
+We suggest using a spreadsheet and trying different triples (a,b,c) to
+try to imitate the number of occurrences of the word as a function of the rank. 
+Plotting a graph (either in linear scale or in log-log scale) is also a good
+option. 
+Do not depend too much on the very first (most frequent) terms, which are noisy.
+What matters is the long tail. Do you approximately get down to frequence 1, 2, 3, ...
+in the same places with your formula as the data?
+</p>
+
+<p>Note: It is not enough to just plot the data and check that you get a 
+decreasing curve that tends to zero. Obviously you will 
+get such a curve. The point is: it is truly a powerlaw
+as these laws predict? (or an exponential? Or something else with another
+decrease rate?)</p>
+
+<p>
+For Heaps' law, check if the number of distinct terms in 
+a piece of text with N words contains about <i>k*N^b</i> different words 
+for some k and beta. So: 1) create indices containing different numbers of novels, 
+or more precisely different quantities of text, as the sizes of the novels
+are very different. 
+2) Use the little program to count the total number of words in each index, 
+and the number of different words in each. 3) See if you find k and b
+that explain your results well.
+</p>
+
+<h2>5. Deliverables</h2>
+
+<p>
+<i>To deliver:</i>
+Write a short report ith your results and thoughts 
+on the Zipf's and Heaps' tests. Explain things like: 
+What best values of (a,b,c) and (k,b) did you find?
+How did you find them - what method did you use? 
+We are less interested in long lists of words of screen prints than
+in your conclusions, so please 2-3 pages maximum</p>
+
+<p>You are welcome to add conclusions
+and thoughts that depart from what we asked you to do. In fact, they'll
+be highly valued if they are intelligent and show that you can go
+beyond following instructions literally.
+</p>
+
+<p>
+<i>Procedure:</i>
+Normally, use the tool in the Rac&oacute; called "Practiques via web". 
+In an emergency, send by email to "gavalda" followed by "@lsi.upc.edu".  
+<p>
+
+<p>
+<i>Deadline:</i>
+Work must be delivered within 2 weeks from the lab session you attend. 
+Late deliveries risk being penalized or not accepted at all. 
+If you anticipate problems with the deadline, tell me as soon as possible. 
+</p>
+
+<p><i>Rules:</i>
+1. You can solve the problem alone or with one other person, 
+but at most one lab assignment with the same person in the whole course. 
+2. No plagiarism; don't discuss your work with others, except
+your teammate if you are solving the problem in two;
+if in doubt about what is allowed, ask us. 
+3. If you feel you are spending much more time than the rest of the group, 
+ask us for help. Questions can be asked either in person or by email, 
+and you'll never be penalized by asking questions, 
+no matter how stupid they look in retrospect.
+</p>
+
+
+<hr>
+<i>Last change: September 19th, 2014</i>
+
+<p></p>
+</body></html>
